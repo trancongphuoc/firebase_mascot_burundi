@@ -1,0 +1,22 @@
+{
+  "rules": {
+    "zodiacGame": {
+      "players": {
+        ".read": true
+      },
+      "state": {
+        ".read": true
+      },
+      "zodiacCards": {
+        ".read": true
+      },
+      "playerBetting": {
+        ".read": true
+      },
+      "topDayUsers": {
+        ".read": true,
+        ".write": "auth != null"
+      }
+    }
+  }
+}
