@@ -1,6 +1,11 @@
 import axios, { AxiosRequestConfig, AxiosResponse } from 'axios';
 import axiosRetry from 'axios-retry';
 
+const https = require('https');
+const agent = new https.Agent({
+    rejectUnauthorized: false // Bỏ qua verify SSL
+});
+
 import {
     REF_ZODIAC_GAME,
     STATE,
@@ -18,11 +23,8 @@ import { User, ZodiacCard } from './model';
 import QueryString from 'qs';
 
 export function setStatusZodiacGame(currentStatus: String, nextStatus: String, milliseconds: number) {
-    console.log("Start setStatusZodiacGame: " + currentStatus + " -> " + nextStatus + " | " + milliseconds)
     setTimeout(async () => {
         try {
-            console.log("Start setStatus " + nextStatus)
-
             const updateData: { [key: string]: any } = {
                 beforeStatus: currentStatus,
                 status: nextStatus,
@@ -35,9 +37,9 @@ export function setStatusZodiacGame(currentStatus: String, nextStatus: String, m
 
             await REF_ZODIAC_GAME.child(STATE).update(updateData);
         } catch (error) {
-            console.error("Lỗi khi cập nhật trạng thái:", error);
+            console.error("Lỗi khi cập nhật trạng thái:");
         } finally {
-            console.log("End setStatus " + nextStatus);
+            
         }
     }, milliseconds);
 }
@@ -58,27 +60,6 @@ export async function setStatusZodiacGameV2(status: String) {
 }
 
 
-// async function countdown(countdownValue: number) {
-//     console.log("Start cowndown: " + new Date().toString())
-//     // Tạo một interval để đếm ngược
-//     const countdownInterval = setInterval(() => {
-//         // Lưu giá trị đếm ngược vào Firebase
-//         REF_ZODIAC_GAME.child(STATE).child(STATE_CHILDREN.COUNT_DOWN).set(countdownValue);
-        
-//         // Giảm giá trị đếm ngược
-//         countdownValue--;
-
-//         // Kiểm tra nếu giá trị đếm ngược đã đạt 0 thì dừng interval
-//         if (countdownValue < 0) {
-//             console.log("Stop cowndown: " + new Date().toString())
-//             clearInterval(countdownInterval);
-//         }
-//     }, 1000); // Cứ mỗi 1 giây
-
-//     // Đảm bảo lưu giá trị đếm ngược lần cuối cùng khi kết thúc đếm ngược
-//     REF_ZODIAC_GAME.child(STATE).child(STATE_CHILDREN.COUNT_DOWN).set(0);
-// }
-
 export async function callApiByAxiosInstance(method: string, url: string, headers: any, data: any, timeout: number, retries: number) {
     try {
         console.log("Start call api: " + url)
@@ -92,7 +73,6 @@ export async function callApiByAxiosInstance(method: string, url: string, header
                 // Điều kiện để quyết định có thử lại hay không
                 // return axiosRetry.isNetworkError(error);
                 console.log("RETRY")
-                console.log(error)
                 return true;
             }
         });
@@ -127,9 +107,9 @@ export async function callApi(method: string, url: string, headers: any, data: a
         try {
             let response: AxiosResponse<any>;
             if (method.toUpperCase() === "GET") {
-                response = await axios.get(url, { headers, timeout });
+                response = await axios.get(url, { headers, timeout, httpsAgent: agent  });
             } else if (method.toUpperCase() === 'POST') {
-                response = await axios.post(url, data, { headers, timeout });
+                response = await axios.post(url, data, { headers, timeout, httpsAgent: agent  });
             } else {
                 console.error(`Unsupported method: ${method}`);
                 return;  
@@ -137,7 +117,7 @@ export async function callApi(method: string, url: string, headers: any, data: a
             return response.data;
         } catch (error) {
             console.error(`Attempt ${attempt + 1} failed:`, error);
-            if (attempt === retries - 1) throw error; 
+            if (attempt === retries - 1) throw error;
             await new Promise(res => setTimeout(res, (attempt + 1) * 500)); // Thời gian chờ lần thử lại tiếp theo
         }
     }
@@ -158,14 +138,20 @@ export async function startZodiacGame() {
         const result = await callApi(method, url, headers, data, 0, 2);
         if(result.status !== "OK") {
             console.log('Start response:', result);
+
+            // Nếu tới lúc game mới start những game cũ chưa bắt đầu thì stop game cũ
+            if(result.message == "The game in progress") {
+                endZodiacGame(result.data.transactionId);
+            }
+
             handleError("Call *StartZodiacGame* GAE Failed \nMessage: " + result.message);
+            throw new Error('StartZodiacGame failed unexpectedly even with OK status' + result.message);
         }
         // Xử lý kết quả ở đây nếu cần
         return result;
     } catch (error) {
         handleError("Call *StartZodiacGame* GAE Failed");
         throw error;
-        
     }
 }
 
@@ -174,33 +160,58 @@ export async function endZodiacGame(transactionId: number) {
     console.log("Start endZodiacGame")
     try {
         const method = 'POST'; // Phương thức HTTP
-        const url = GAE_DOMAIN + GAE_API.ZODIAC_GAME_END + "/" + transactionId; // URL của API start
+        const url = GAE_DOMAIN + GAE_API.ZODIAC_GAME_END; // URL của API start
         const headers = {
             // Các header nếu cần
             'Content-Type': 'application/json'
         };
-        const data = {}; // Dữ liệu truyền vào API nếu cần
-
+        const data = {zodiacGameId: transactionId}; // Dữ liệu truyền vào API nếu cần
         // Gọi API start một cách đồng bộ
         const result = await callApi(method, url, headers, data, 0, 2);
         if(result.status !== "OK") {
             console.log('Start response:', result);
-            handleError("Call *EndZodiacGame* GAE Failed \nMessage: " + result.message);
-        }        
+            handleError("Call *StartZodiacGame* GAE Failed \nMessage: " + result.message);
+            throw new Error('StartZodiacGame failed unexpectedly even with OK status' + result.message);
+        }
+        console.log(result);     
         return result;
     } catch (error) {
+        // console.error("BUGS", error);
         handleError("Call *EndZodiacGame* GAE Failed");
         throw error;
     }
 }
 
+// export async function endZodiacGame(transactionId: number) {
+//     console.log("Start endZodiacGame")
+//     try {
+//         const method = 'POST'; // Phương thức HTTP
+//         const url = GAE_DOMAIN + GAE_API.ZODIAC_GAME_END + "/" + transactionId; // URL của API start
+//         const headers = {
+//             // Các header nếu cần
+//             'Content-Type': 'application/json'
+//         };
+//         const data = {}; // Dữ liệu truyền vào API nếu cần
+//         // Gọi API start một cách đồng bộ
+//         const result = await callApi(method, url, headers, data, 0, 2);
+//         if(result.status !== "OK") {
+//             console.log('Call *EndZodiacGame* GAE Failed:', result);
+//             handleError("Call *EndZodiacGame* GAE Failed \nMessage: " + result.message);
+//         }        
+//         return result;
+//     } catch (error) {
+//         handleError("Call *EndZodiacGame* GAE Failed");
+//         throw error;
+//     }
+// }
+
 
 export async function callExitGame(facebookUserId: string) {
     try {
         const method = 'POST'; // Phương thức HTTP
-        const url = GAE_DOMAIN + GAE_API.ZODIAC_GAME_EXIT_GAME + "?facebookUserId=" + encodeURIComponent(facebookUserId); // URL của API start
+        const url = GAE_DOMAIN + GAE_API.ZODIAC_GAME_EXIT_GAME + "?userId=" + encodeURIComponent(facebookUserId); // URL của API start
 
-        const data = "facebookUserId=" + facebookUserId; // Dữ liệu truyền vào API nếu cần
+        const data = "userId=" + facebookUserId; // Dữ liệu truyền vào API nếu cần
 
         const headers = {
             // Các header nếu cần
@@ -209,7 +220,6 @@ export async function callExitGame(facebookUserId: string) {
 
         // Gọi API start một cách đồng bộ
         const result = await callApi(method, url, headers, data, 0, 2);
-        console.log('Start response:', result);
         // Xử lý kết quả ở đây nếu cần
         return result;
     } catch (error) {
@@ -288,12 +298,10 @@ export async function getZodiacCards() {
         // Gọi hàm callApi để thực hiện yêu cầu API getListByStatus một cách đồng bộ
         const result = await callApi(method, url, null, null, 0, 2);
 
-        console.log('Start response:', result);
-        // Trả về dữ liệu từ API
         return result;
     } catch (error) {
         // Xử lý các lỗi xảy ra trong quá trình gọi API
-        console.error("Error calling getZodiacCards API:", error);
+        console.error("Error calling getZodiacCards API:");
         handleError("Call *GetZodiacCards* GAE Failed");
     }
 }
@@ -317,7 +325,7 @@ export async function clearUserBetting() {
         await REF_ZODIAC_GAME.child(PLAYERS_BETTING).remove();
         console.log("clearUserBetting complete");
     } catch (error) {
-        console.error("Error clearing user betting:", error);
+        console.error("Error clearing user betting:");
     }
 }
 
@@ -390,7 +398,6 @@ export async function handleResultBettingForUser() {
                                 console.error("Transaction zodiac failed: ", error);
                             } else if (committed && snapshot?.val != null) {
                                 const updatedTotalIcoinWinToday = snapshot.val();
-                                console.log("Updated totalIcoinWinToday: ", updatedTotalIcoinWinToday);
                         
                                 const topUserRef = REF_ZODIAC_GAME.child(TOP_DAY_USER).child(playerSnapshot.key!);
                         
@@ -401,9 +408,9 @@ export async function handleResultBettingForUser() {
                                         topUserRef.update({
                                             totalIcoinWin: updatedTotalIcoinWinToday
                                         }).then(() => {
-                                            console.log("Top user totalIcoinWin updated successfully");
+                                            
                                         }).catch((error) => {
-                                            console.error("Error updating top user totalIcoinWin: ", error);
+                                            
                                         });
                                     } else {
                                         // If the user doesn't exist, create a new entry with additional data
@@ -426,7 +433,6 @@ export async function handleResultBettingForUser() {
                         });
 
                         //set data for topUser in data
-                        console.log(bettingCardSnapshot)
 
                     } else {
                         playerSnapshot.child(PLAYERS_FBID_CHILDREN.IS_WIN).ref.set(false);
@@ -447,7 +453,6 @@ export async function updateZodiacCards() {
         const url = GAE_DOMAIN + GAE_API.ZODIAC_GAME_UPDATE_ZODIAC_CARDS;
         const result = await callApi(method, url, null, null, 0, 1);
     
-        console.log('Start response:', result);
         return result;
     } catch (error) {
         console.error("Error calling getZodiacCards API:", error);
@@ -473,14 +478,14 @@ export function handleError(body: string) {
         sendMailErrorGame("phuoctc.2000@gmail.com", body , "Mascot");
         // sendMessageToSlack(ZODIAC_GAME_SLACK_CHANEL, body);
     } catch(error) {
-        console.log(error)
+        console.log("Send mail error")
     }
 }
 
 export async function sendMailErrorGame(toEmails: string, body: string, subject: string) {
     try {
         const method = 'POST'; // Phương thức HTTP
-        const url = GAE_DOMAIN + GAE_API.SEND_MAIL; // URL của API start
+        const url = "https://www.ikara.co" + GAE_API.SEND_MAIL; // URL của API start
         const headers = {
             // Các header nếu cần
             'Content-Type': 'application/x-www-form-urlencoded'
@@ -493,11 +498,10 @@ export async function sendMailErrorGame(toEmails: string, body: string, subject:
 
         const encodedData = QueryString.stringify(data); // Chuyển đổi dữ liệu thành chuỗi URL-encoded
         const result = await callApi(method, url, headers, encodedData, 0, 2);
-        console.log('Start response:', result);
         // Xử lý kết quả ở đây nếu cần
         return result;
     } catch (error) {
-        console.error('Error send mail:', error);
+        console.error('Error send mail:');
         // Xử lý lỗi ở đây nếu cần
     }
 }
@@ -517,7 +521,6 @@ export async function sendMessageToSlack(slackChanel: string, message: string) {
 
         const encodedData = QueryString.stringify(data); // Chuyển đổi dữ liệu thành chuỗi URL-encoded
         const result = await callApi(method, url, headers, encodedData, 0, 2);
-        console.log('Start response:', result);
         // Xử lý kết quả ở đây nếu cần
         return result;
     } catch (error) {

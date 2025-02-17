@@ -105,7 +105,7 @@ exports.ChangeZodiacGameStatus = functions
         } catch (error) {
             const body = "Error: " + error + "\nStatus: " + currentVal;
             Service.handleError(body);
-            console.log("ERROR: ", error);
+            console.log("ERROR" + " Status " + currentVal);
             Service.setStatusZodiacGameV2(ZODIAC_GAME_STATUSES.RETRY);
         } finally {
             // Giải phóng khóa sau khi hoàn thành công việc
@@ -117,7 +117,7 @@ exports.ChangeZodiacGameStatus = functions
 });
 
 
-exports.RemoveInactiveUser = functions.pubsub.schedule('every 1 minutes').onRun(async (context) => {
+exports.RemoveInactiveUser = functions.pubsub.schedule('every 15 minutes').onRun(async (context) => {
     try {
 
         const currentTime = new Date().getTime();
@@ -194,10 +194,7 @@ exports.CheckZodiacGame = functions.pubsub.schedule('every minute').onRun(async 
 })
 
 exports.SuggestZodiacCardByTopUser =  functions.database.ref(ZODIAC_GAME + "/" + PLAYERS_BETTING  + "/{facebookId}/" + PLAYERS_FBID_CHILDREN.BETTING_CARDS).onWrite(async (change, context) => {
-    const beforeData = change.before.val();
     const afterData = change.after.val(); 
-    console.log("beforeData: ", beforeData);
-    console.log("afterData: ", afterData);
     const facebookId = context.params.facebookId;
     try {
         if(afterData ) {
@@ -212,7 +209,6 @@ exports.SuggestZodiacCardByTopUser =  functions.database.ref(ZODIAC_GAME + "/" +
                         const updateData = {
                             "bettingCards": playerBettingCard
                         };
-                        console.log("step 0: ", updateData);
                         await REF_ZODIAC_GAME.child(STATE).child(STATE_CHILDREN.TOP_USERS).child(topUserId).update(updateData);
                         break;
                     }

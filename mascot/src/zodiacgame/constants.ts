@@ -5,26 +5,37 @@ import { Firestore } from 'firebase-admin/firestore';
 const admin = require('firebase-admin');
 const semaphore = require('semaphore');
 
-export let GAE_DOMAIN: string;
-
-if (process.env.GCLOUD_PROJECT === 'ikara4m') {
-    GAE_DOMAIN = 'https://www.ikara.co';
-} else {
-    GAE_DOMAIN = 'https://ikara-development.appspot.com';
-}
 
 export const ZODIAC_GAME_SLACK_CHANEL = "C07DJ6J7HLH";
 
+
+
+// export const GAE_DOMAIN = "https://mascot.lumitel.bi";
+export const GAE_DOMAIN = "https://154.117.220.30"
 export const GAE_API = {
-    ZODIAC_CARD_LIST: "/rest/zodiac-card/list",
-    ZODIAC_GAME_JOIN_GAME: "/rest/zodiac-game/join-game",
-    ZODIAC_GAME_EXIT_GAME: "/rest/zodiac-game/exit-game",
-    ZODIAC_GAME_START: "/rest/zodiac-game/start",
-    ZODIAC_GAME_END: "/rest/zodiac-game/end",
-    ZODIAC_GAME_UPDATE_ZODIAC_CARDS: "/rest/zodiac-game/update-zodiac-cards",
+    ZODIAC_CARD_LIST: "/api/zodiac-card/list",
+    ZODIAC_GAME_JOIN_GAME: "/api/mascot/join-game",
+    ZODIAC_GAME_EXIT_GAME: "/api/mascot/exit-game",
+    ZODIAC_GAME_START: "/api/mascot/start",
+    ZODIAC_GAME_END: "/api/mascot/end",
+    ZODIAC_GAME_UPDATE_ZODIAC_CARDS: "/api/mascot/update-zodiac-cards",
     SEND_MAIL: "/cronjobs.SendEmail",
     SEND_MESSAGE_TO_SLACK: "/taskQueue.SendMessageToSlack"
 };
+
+// export const GAE_DOMAIN = 'https://ikara-development.appspot.com';
+
+// export const GAE_API = {
+//     ZODIAC_CARD_LIST: "/rest/zodiac-card/list",
+//     ZODIAC_GAME_JOIN_GAME: "/rest/zodiac-game/join-game",
+//     ZODIAC_GAME_EXIT_GAME: "/rest/zodiac-game/exit-game",
+//     ZODIAC_GAME_START: "/rest/zodiac-game/start",
+//     ZODIAC_GAME_END: "/rest/zodiac-game/end",
+//     ZODIAC_GAME_UPDATE_ZODIAC_CARDS: "/rest/zodiac-game/update-zodiac-cards",
+//     SEND_MAIL: "/cronjobs.SendEmail",
+//     SEND_MESSAGE_TO_SLACK: "/taskQueue.SendMessageToSlack"
+// };
+
 export const FIRE_STORE: Firestore = admin.firestore()
 
 export const REF_IKARA: Reference = admin.database().ref("/ikara")
