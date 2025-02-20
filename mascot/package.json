@@ -1,0 +1,61 @@
+{
+  "name": "functions",
+  "version": "1.2.28",
+  "description": "Ikara firebase API",
+  "main": "lib/index.js",
+  "scripts": {
+    "lint": "eslint \"src/**/*\"",
+    "build": "tsc", 
+    "dev": "set NODE_ENV=development && nodemon --watch src --ext js,ts,json --exec \"npm run build && firebase functions:shell\"",
+    "debug": "set NODE_ENV=development && nodemon --watch src --ext js,ts,json --exec \"npm run build && firebase emulators:start --inspect-functions --only functions\"",
+    "serve": "npm run build && firebase serve --only functions",
+    "shell": "npm run build && firebase functions:shell",
+    "start": "npm run shell",
+    "deploy": "firebase deploy --only functions",
+    "logs": "firebase functions:log",
+    "build:watch": "tsc -w",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "engines": {
+    "node": "20"
+  },
+  "dependencies": {
+    "@types/react": "^18.2.21",
+    "aws-sdk": "^2.775.0",
+    "axios": "^1.5.1",
+    "compare-versions": "^3.6.0",
+    "eslint-config-prettier": "^9.0.0",
+    "firebase-admin": "^12.0.0",
+    "firebase-functions": "^5.1.1",
+    "i18n": "^0.15.1",
+    "image-size": "^1.0.2",
+    "jimp": "^0.22.10",
+    "js-base64": "^3.7.5",
+    "md5-hash": "^1.0.1",
+    "react-i18next": "^13.2.2",
+    "request": "^2.88.2",
+    "sleepjs": "^4.0.3",
+    "typescript": "^5.2.2",
+    "unique-names-generator": "^4.7.1",
+    "uuid": "^9.0.0",
+    "axios-retry": "^4.1.0",
+    "semaphore" : "^1.1.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.6.0",
+    "@typescript-eslint/eslint-plugin": "^6.6.0",
+    "@typescript-eslint/parser": "^6.6.0",
+    "eslint": "^8.49.0",
+    "eslint-config-eslint": "^9.0.0",
+    "eslint-plugin-import": "^2.28.1",
+    "firebase-functions-test": "^0.2.0",
+    "typescript": "^5.2.2"
+  },
+  "private": true,
+  "repository": {
+    "type": "git",
+    "url": "https://data.ikara.co:9443/scm/ik/firebaseapi.git"
+  },
+  "author": "",
+  "license": "ISC"
+}
