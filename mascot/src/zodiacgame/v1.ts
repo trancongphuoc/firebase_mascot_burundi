@@ -163,6 +163,12 @@ exports.CheckZodiacGame = functions.pubsub.schedule('every minute').onRun(async 
             if(currentTime - lastUpdateStatusValue > 1000 * 60) {
                 flagCheck = true;
             }
+        } if(statusValue === ZODIAC_GAME_STATUSES.RETRY) {
+            if(currentTime - lastUpdateStatusValue > 1000 * 40) {
+                const beforeStatusSnapshot = await REF_ZODIAC_GAME.child(STATE).child(STATE_CHILDREN.BEFORE_STATUS).once("value");
+                const beforeStatus = beforeStatusSnapshot.val();
+                Service.setStatusZodiacGameV2(beforeStatus);
+            }
         } else if(statusValue !== ZODIAC_GAME_STATUSES.PAUSE) {
             if(currentTime - lastUpdateStatusValue > 1000 * 40) {
                 flagCheck = true;
