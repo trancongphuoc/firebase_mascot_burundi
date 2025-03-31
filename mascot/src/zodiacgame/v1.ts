@@ -117,7 +117,7 @@ exports.ChangeZodiacGameStatus = functions
 });
 
 
-exports.RemoveInactiveUser = functions.pubsub.schedule('every 15 minutes').onRun(async (context) => {
+exports.RemoveInactiveUser = functions.pubsub.schedule('every 10 minutes').onRun(async (context) => {
     try {
 
         const currentTime = new Date().getTime();
@@ -126,9 +126,12 @@ exports.RemoveInactiveUser = functions.pubsub.schedule('every 15 minutes').onRun
         if (playersSnapshot.exists()) {
             playersSnapshot.forEach((playerSnapshot) => {
                 const lastUpdate = playerSnapshot.child(PLAYERS_FBID_CHILDREN.LAST_UPDATE).val();
-                const oneHourAgo = currentTime - (1000 * 60 * 1);
+                const oneHourAgo = currentTime - (1000 * 10 * 1);
                 if (!lastUpdate || lastUpdate < oneHourAgo) { // 1 hour in milliseconds
-                    Service.callExitGame(playerSnapshot.key);
+                    // Service.callExitGame(playerSnapshot.key);
+                    REF_ZODIAC_GAME.child(PLAYERS).child(playerSnapshot.key).remove()
+                    .then(() => console.log(`Removed inactive player: ${playerSnapshot.key}`))
+                    .catch(error => console.error(`Failed to remove player ${playerSnapshot.key}:`, error));
                 }
             });
         }
